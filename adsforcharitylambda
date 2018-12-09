@@ -1,0 +1,45 @@
+const AWS = require('aws-sdk');
+const ddb = new AWS.DynamoDB.DocumentClient();
+
+exports.handler = (event, context, callback) => {
+
+    console.log('Received event: ', event);
+
+    let charity = -1;
+
+    if (event.body !== undefined) {
+        let eventBody = JSON.parse(event.body);
+
+        if (eventBody.charity !== undefined) {
+            charity = eventBody.charity;
+        }
+    }
+
+    recordWatch(charity).then(() => {
+        callback(null, {
+            isBase64Encoded: false,
+            statusCode: 200,
+            headers: {},
+            body: "Success!"
+        });
+    }).catch((err) => {
+        console.error(err);
+
+        callback({
+            isBase64Encoded: false,
+            statusCode: 400,
+            headers: {},
+            body: "Error!"
+        }, null);
+    });
+};
+
+function recordWatch(charity) {
+    return ddb.put({
+        TableName: 'AdsForCharity',
+        Item: {
+            CharityId: charity,
+            AdWatchTimestamp: new Date().toISOString()
+        },
+    }).promise();
+}
